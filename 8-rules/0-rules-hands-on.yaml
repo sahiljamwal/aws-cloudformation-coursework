@@ -1,0 +1,43 @@
+Parameters:
+  EnvType:
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
+    ConstraintDescription: env must be prod or dev
+
+  InstanceType:
+    Type: String
+    Default: t2.small
+    AllowedValues:
+      - t2.nano
+      - t2.micro
+      - t2.small
+
+  ImageId:
+    Type: AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>
+    Default: /aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-gp2
+
+Rules:
+  ProdInstance:
+    RuleCondition: !Equals [!Ref EnvType, prod]
+    Assertions:
+      - Assert: !Equals [t2.small, !Ref InstanceType]
+        AssertDescription: "For a production environment, the instance type must be t2.small"
+
+  DevInstance:
+    RuleCondition: !Equals [!Ref EnvType, dev]
+    Assertions:
+      - Assert:
+          "Fn::Or":
+            - !Equals [!Ref InstanceType, t2.nano]
+            - !Equals [!Ref InstanceType, t2.micro]
+        AssertDescription: "For a development environment, the instance type must be t2.nano or t2.micro"
+
+Resources:
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref ImageId
+      InstanceType: !Ref InstanceType
